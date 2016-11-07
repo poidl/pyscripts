@@ -6,9 +6,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from topo_smoothing import topo_smoothing
 
-fname = '../data/ETOPO2v2g_f4.nc'
+fname = '../../../work/data/ETOPO2v2g_f4.nc'
 grdname = 'topo.nc'
 FIGNAME = 'figure.pdf'
 
@@ -92,5 +91,5 @@ ax1.yaxis.set_ticks_position('right')
 ax1.xaxis.set_label_position('top')
 ax1.xaxis.set_ticks_position('top')
 
-fig.savefig(FIGNAME)
+fig.savefig('figures/' + FIGNAME)
 print('done')
