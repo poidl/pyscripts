@@ -2,3 +2,6 @@ __pycache__
 .vscode
 data
 figures
+*.pdf
+*.nc
+
