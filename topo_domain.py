@@ -4,7 +4,6 @@
 import sys
 from netCDF4 import Dataset as nc
 import numpy as np
-from scipy import interpolate
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -73,52 +72,58 @@ z.mask[z > 0] = True
 
 ######################################
 
-xx, yy = np.meshgrid(x, y)
-fz = interpolate.RectBivariateSpline(y, x, z)
+rot_angle = np.pi / 3
+zrot, mask_rotation = u.rotate(x, y, z, rot_angle)
+limits = [0, -1, 40, 60]
+zcut = u.cut(limits, zrot, mask_rotation)
 
-# center of rotation
-centerx = x[int(len(x) / 2)]
-centery = y[int(len(y) / 2)]
+# coriolis parameter
+phi = 2 * np.pi * (y / 360)
+omega = 7.2921159e-5
+f = 2 * omega * np.cos(phi)
+f = np.tile(f[::-1], [nx, 1]).transpose()
 
-# translate, rotate, translate back
-xx = xx - centerx
-yy = yy - centery
-xxrot, yyrot = u.rotate(xx, yy, np.pi / 3)
-xxrot = xxrot + centerx
-yyrot = yyrot + centery
-
-# evaluate interpolation
-zrot = fz.ev(yyrot.flatten(), xxrot.flatten())
-zrot = np.reshape(zrot, (ny, nx))
-
-# mask
-zrot[zrot > 0] = np.nan
-xout = np.logical_or(xxrot < x.min(), xxrot > x.max())
-yout = np.logical_or(yyrot < y.min(), yyrot > y.max())
-zrot[xout | yout] = np.nan
-
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(zrot, origin='lower', interpolation='nearest')
-fig.savefig('figures/rot.pdf')
-print('done')
-
+frot, mask_rotation = u.rotate(x, y, f, rot_angle)
+fcut = u.cut(limits, frot, mask_rotation)
+nycut, nxcut = zcut.shape
 
 ###################################
-mask = np.zeros(z.shape, dtype=bool)
-mask[:, :40] = 1
-mask[:, -35:] = 1
 
-# alert if parts outside of the original domain are not cut
-outside = ~mask & [xout | yout]
-if np.any(outside):
-    raise Exception(
-        'Rotated domain outside of original domain (total of ' + str(
-            sum(outside.flatten())) + ' gridpoints).')
-zrot = zrot[~mask]
+# write to nc file
+unc.create_grd(grdname_out, nycut, nxcut)
+grid = nc(grdname_out, 'a')
+grid.variables['h'][:] = zcut
+grid.variables['xl'][:] = nxcut
+grid.variables['el'][:] = nycut
+grid.variables['spherical'][:] = 0
+grid.variables['f'][:] = fcut
+grid.close()
+
+###################################
 
 fig = plt.figure(figsize=(8, 8))
 p1 = plt.imshow(zrot, origin='lower', interpolation='nearest')
-fig.savefig('figures/domain.pdf')
+fig.savefig('figures/zrot.pdf')
+print('done')
+
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(zcut, origin='lower', interpolation='nearest')
+fig.savefig('figures/zcut.pdf')
+print('done')
+
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(f, origin='lower', interpolation='nearest')
+fig.savefig('figures/f.pdf')
+print('done')
+
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(frot, origin='lower', interpolation='nearest')
+fig.savefig('figures/frot.pdf')
+print('done')
+
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(fcut, origin='lower', interpolation='nearest')
+fig.savefig('figures/fcut.pdf')
 print('done')
 
 ###################################
@@ -154,16 +159,3 @@ ax1.xaxis.set_ticks_position('top')
 
 fig.savefig('figures/' + FIGNAME)
 print('done')
-
-######################################
-
-unc.create_grd(grdname_out, ny, nx)
-
-grid = nc(grdname_out, 'a')
-# grid.variables['xh'][:] = xh
-# grid.variables['yh'][:] = yh
-grid.variables['h'][:] = z
-grid.variables['xl'][:] = nx
-grid.variables['el'][:] = ny
-grid.variables['spherical'][:] = 0
-grid.close()
