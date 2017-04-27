@@ -68,23 +68,25 @@ ny = np.sum(by)
 # extract from nc file
 z = ff.variables['z'][by, bx]
 z = np.reshape(z, (ny, nx))
-z.mask[z > 0] = True
+# z.mask[z > 0] = True
 
 ######################################
 
 rot_angle = np.pi / 3
-zrot, mask_rotation = u.rotate(x, y, z, rot_angle)
+zrot = u.rotate(x, y, z, rot_angle)
+
 limits = [0, -1, 40, 60]
-zcut = u.cut(limits, zrot, mask_rotation)
+zcut = u.cut(limits, zrot)
 
 # coriolis parameter
 phi = 2 * np.pi * (y / 360)
 omega = 7.2921159e-5
 f = 2 * omega * np.cos(phi)
 f = np.tile(f[::-1], [nx, 1]).transpose()
+f = f.view(np.ma.MaskedArray)
 
-frot, mask_rotation = u.rotate(x, y, f, rot_angle)
-fcut = u.cut(limits, frot, mask_rotation)
+frot = u.rotate(x, y, f, rot_angle)
+fcut = u.cut(limits, frot)
 nycut, nxcut = zcut.shape
 
 ###################################

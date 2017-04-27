@@ -26,11 +26,25 @@ def rotate(x, y, z, phi):
     ----------
     x: 1-d array
     y: 1-d array
-    z: data on a rectangular mesh defined by x and y
+    z: Masked data on a rectangular mesh defined by x and y
     phi: angle of rotation
+
+    TODO: take account of varying lat/lon spacing
     """
+
+    ny, nx = z.shape
+    dx = np.diff(x)
+    dy = np.diff(y)
+
+    if type(z) is not np.ma.MaskedArray:
+        raise Exception(
+            "Aborted. Array is not masked, fill values may affect interpolation.")
+
+    if (len(x) != nx) | (len(y) != ny) | (dx[0] != dx[-1]) | (dy[0] != dy[-1]) | (dx[0] != dy[0]):
+        raise Exception(
+            "Aborted. Not smart enough to handle irregular grids.")
+
     xx, yy = np.meshgrid(x, y)
-    fz = interpolate.RectBivariateSpline(y, x, z)
 
     # center of rotation
     centerx = x[int(len(x) / 2)]
@@ -43,33 +57,48 @@ def rotate(x, y, z, phi):
     xxrot = xxrot + centerx
     yyrot = yyrot + centery
 
-    # evaluate interpolation
-    zrot = fz.ev(yyrot.flatten(), xxrot.flatten())
-    nx = len(x)
-    ny = len(y)
-    zrot = np.reshape(zrot, (ny, nx))
+    # output is initially masked everywhere
+    o = np.nan * np.ones((ny, nx))
+    zrot = np.ma.array(o, mask=np.ones((ny, nx)))
 
-    # mask
-    if type(z) is np.ma.MaskedArray:
-        zrot[zrot > 0] = np.nan
-    xout = np.logical_or(xxrot < x.min(), xxrot > x.max())
-    yout = np.logical_or(yyrot < y.min(), yyrot > y.max())
-    mask = xout | yout
-    zrot[mask] = np.nan
+    # suppress warning
+    zrot.unshare_mask()
 
-    # return (xxrot, yyrot, zrot)
-    return (zrot, mask)
+    # TODO: do this more efficiently, but in a way that accounts for masked
+    # values. Here, each rotated data point is considered individually, with
+    # its 4 surrounding gridpoints on the original grid.
+
+    for jrot in np.arange(ny):
+        for irot in np.arange(nx):
+            xp = xxrot[jrot, irot]
+            yp = yyrot[jrot, irot]
+            i = x < xp
+            i = int(sum(i)) - 1
+            j = y < yp
+            j = int(sum(j)) - 1
+
+            # check if rotated point is outside of original domain
+            if (i == nx - 1) | (j == ny - 1) | (i < 0) | (j < 0):
+                continue
+
+            # interpolate
+            f = interpolate.interp2d(
+                [y[j], y[j + 1]], [x[i], x[i + 1]], z[j:j + 2, i:i + 2])
+            zrot[jrot, irot] = f(yp, xp)
+
+    return (zrot)
 
 
-def cut(limits, z, mask_rotation):
+def cut(limits, z):
     """Cut domain to rectangular shape (e.g. after rotating)
 
     Parameters
     ----------
-    limits: boundary indices of the domain (included) 
+    limits: boundary indices of the domain (included)
     z: data on a rectangular mesh
     mask_rotation: true if points were left undefined after rotating
     """
+
     mask = np.ones(z.shape, dtype=bool)
     y1 = limits[0]
     y2 = limits[1]
@@ -77,12 +106,13 @@ def cut(limits, z, mask_rotation):
     x2 = limits[3]
     mask[y1:y2, x1:x2] = 0
 
-    # alert if parts outside of the original domain are not cut
-    outside = ~mask & mask_rotation
-    if np.any(outside):
-        raise Exception(
-            'Rotated domain outside of original domain (total of ' + str(
-                sum(outside.flatten())) + ' gridpoints).')
+    # alert if masked parts (e.g. fill values or nans) are not cut
+    if type(z) is np.ma.MaskedArray:
+        outside = ~mask & z.mask
+        if np.any(outside):
+            raise Exception(
+                'Rotated domain outside of original domain (total of ' + str(
+                    sum(outside.flatten())) + ' gridpoints).')
     z = z[~mask]
     ii = np.where(~mask)
     ny = ii[0][-1] - ii[0][0] + 1
