@@ -55,6 +55,10 @@ def create_grd(grdname, ny, nx):
     ff.createVariable('el', 'd', ('scalar',))
     ff.createVariable('spherical', 'i', ('scalar',))
     ff.createVariable('f', 'd', (dimy, dimx, ))
+    ff.createVariable('pm', 'd', (dimy, dimx, ))
+    ff.createVariable('pn', 'd', (dimy, dimx, ))
+    ff.createVariable('dmde', 'd', (dimy, dimx, ))
+    ff.createVariable('dndx', 'd', (dimy, dimx, ))
 
     ff.close()
 

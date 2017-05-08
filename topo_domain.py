@@ -72,11 +72,18 @@ z = np.reshape(z, (ny, nx))
 
 ######################################
 
-rot_angle = np.pi / 3
-zrot = u.rotate(x, y, z, rot_angle)
+angle_rot = np.pi / 4
+angle_rot = 0
+
+# center of rotation
+centerx = x[int(len(x) / 2)]
+centery = y[int(len(y) / 2)]
+xxrot, yyrot, zrot = u.rotate_and_interpolate(
+    x, y, z, angle_rot, centerx, centery)
 
 limits = [0, -1, 40, 60]
 zcut = u.cut(limits, zrot)
+nycut, nxcut = zcut.shape
 
 # coriolis parameter
 phi = 2 * np.pi * (y / 360)
@@ -85,79 +92,120 @@ f = 2 * omega * np.cos(phi)
 f = np.tile(f[::-1], [nx, 1]).transpose()
 f = f.view(np.ma.MaskedArray)
 
-frot = u.rotate(x, y, f, rot_angle)
+xxrot, yyrot, frot = u.rotate_and_interpolate(
+    x, y, f, angle_rot, centerx, centery)
 fcut = u.cut(limits, frot)
-nycut, nxcut = zcut.shape
 
-###################################
+
+pm, pn, dmde, dndx = u.get_pmpn(x, y, angle_rot, centerx, centery)
+pmcut = u.cut(limits, pm)
+pncut = u.cut(limits, pn)
+dmdecut = u.cut(limits, dmde)
+dndxcut = u.cut(limits, dndx)
+
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(pm, origin='lower', interpolation='nearest')
+plt.colorbar()
+fig.savefig('figures/pm.pdf')
+print('done')
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(pn, origin='lower', interpolation='nearest')
+plt.colorbar()
+fig.savefig('figures/pn.pdf')
+print('done')
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(dmde, origin='lower', interpolation='nearest')
+plt.colorbar()
+fig.savefig('figures/dmde.pdf')
+print('done')
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(dndx, origin='lower', interpolation='nearest')
+plt.colorbar()
+fig.savefig('figures/dndx.pdf')
+print('done')
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(dndx, origin='lower', interpolation='nearest')
+plt.colorbar()
+fig.savefig('figures/dndx.pdf')
+print('done')
+fig = plt.figure(figsize=(8, 8))
+p1 = plt.imshow(1 / pm, origin='lower', interpolation='nearest')
+plt.colorbar()
+fig.savefig('figures/1overpm.pdf')
+print('done')
+
+# ###################################
 
 # write to nc file
 unc.create_grd(grdname_out, nycut, nxcut)
 grid = nc(grdname_out, 'a')
 grid.variables['h'][:] = zcut
-grid.variables['xl'][:] = nxcut
-grid.variables['el'][:] = nycut
+# Make sure 'xl' and 'el' are not used on a sherical grid
+grid.variables['xl'][:] = np.nan
+grid.variables['el'][:] = np.nan
 grid.variables['spherical'][:] = 0
 grid.variables['f'][:] = fcut
+grid.variables['pm'][:] = pmcut
+grid.variables['pn'][:] = pncut
 grid.close()
 
-###################################
+# ###################################
 
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(zrot, origin='lower', interpolation='nearest')
-fig.savefig('figures/zrot.pdf')
-print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(zrot, origin='lower', interpolation='nearest')
+# fig.savefig('figures/zrot.pdf')
+# print('done')
 
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(zcut, origin='lower', interpolation='nearest')
-fig.savefig('figures/zcut.pdf')
-print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(zcut, origin='lower', interpolation='nearest')
+# fig.savefig('figures/zcut.pdf')
+# print('done')
 
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(f, origin='lower', interpolation='nearest')
-fig.savefig('figures/f.pdf')
-print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(f, origin='lower', interpolation='nearest')
+# fig.savefig('figures/f.pdf')
+# print('done')
 
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(frot, origin='lower', interpolation='nearest')
-fig.savefig('figures/frot.pdf')
-print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(frot, origin='lower', interpolation='nearest')
+# fig.savefig('figures/frot.pdf')
+# print('done')
 
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(fcut, origin='lower', interpolation='nearest')
-fig.savefig('figures/fcut.pdf')
-print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(fcut, origin='lower', interpolation='nearest')
+# fig.savefig('figures/fcut.pdf')
+# print('done')
 
-###################################
-fig = plt.figure(figsize=(8, 8))
+# ###################################
+# fig = plt.figure(figsize=(8, 8))
 
-pos1 = [0.1, 0.1, 0.65, 0.8]
-ax1 = fig.add_axes(pos1)
-p1 = ax1.imshow(z, origin='lower', interpolation='nearest')
-ax1.set_aspect('auto')
-ax1.set_xlabel('Gridpoints in x-direction')
-ax1.set_ylabel('Gridpoints in y-direction')
+# pos1 = [0.1, 0.1, 0.65, 0.8]
+# ax1 = fig.add_axes(pos1)
+# p1 = ax1.imshow(z, origin='lower', interpolation='nearest')
+# ax1.set_aspect('auto')
+# ax1.set_xlabel('Gridpoints in x-direction')
+# ax1.set_ylabel('Gridpoints in y-direction')
 
-pos2 = [0.88, 0.1, 0.03, 0.8]
-ax2 = fig.add_axes(pos2)
-plt.colorbar(p1, ax2)
+# pos2 = [0.88, 0.1, 0.03, 0.8]
+# ax2 = fig.add_axes(pos2)
+# plt.colorbar(p1, ax2)
 
-ax3 = fig.add_axes(pos1, frameon=False)
-ax3.set_xlim(lonmin, lonmax)
-ax3.set_ylim(latmin, latmax)
-ax3.grid()
-ax3.set_xlabel('Longitude')
-ax3.set_ylabel('Latitude')
+# ax3 = fig.add_axes(pos1, frameon=False)
+# ax3.set_xlim(lonmin, lonmax)
+# ax3.set_ylim(latmin, latmax)
+# ax3.grid()
+# ax3.set_xlabel('Longitude')
+# ax3.set_ylabel('Latitude')
 
-ax3.yaxis.set_label_position('left')
-ax3.yaxis.set_ticks_position('left')
-ax3.xaxis.set_label_position('bottom')
-ax3.xaxis.set_ticks_position('bottom')
+# ax3.yaxis.set_label_position('left')
+# ax3.yaxis.set_ticks_position('left')
+# ax3.xaxis.set_label_position('bottom')
+# ax3.xaxis.set_ticks_position('bottom')
 
-ax1.yaxis.set_label_position('right')
-ax1.yaxis.set_ticks_position('right')
-ax1.xaxis.set_label_position('top')
-ax1.xaxis.set_ticks_position('top')
+# ax1.yaxis.set_label_position('right')
+# ax1.yaxis.set_ticks_position('right')
+# ax1.xaxis.set_label_position('top')
+# ax1.xaxis.set_ticks_position('top')
 
-fig.savefig('figures/' + FIGNAME)
-print('done')
+# fig.savefig('figures/' + FIGNAME)
+# print('done')
