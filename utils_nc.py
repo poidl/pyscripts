@@ -59,6 +59,7 @@ def create_grd(grdname, ny, nx):
     ff.createVariable('pn', 'd', (dimy, dimx, ))
     ff.createVariable('dmde', 'd', (dimy, dimx, ))
     ff.createVariable('dndx', 'd', (dimy, dimx, ))
+    ff.createVariable('angle', 'd', (dimy, dimx, ))
 
     ff.close()
 

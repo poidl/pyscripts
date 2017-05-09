@@ -72,8 +72,7 @@ z = np.reshape(z, (ny, nx))
 
 ######################################
 
-angle_rot = np.pi / 4
-angle_rot = 0
+angle_rot = np.pi / 3
 
 # center of rotation
 centerx = x[int(len(x) / 2)]
@@ -81,8 +80,8 @@ centery = y[int(len(y) / 2)]
 xxrot, yyrot, zrot = u.rotate_and_interpolate(
     x, y, z, angle_rot, centerx, centery)
 
-limits = [0, -1, 40, 60]
-zcut = u.cut(limits, zrot)
+cutlimits = [0, -1, 40, 60]
+zcut = u.cut(cutlimits, zrot)
 nycut, nxcut = zcut.shape
 
 # coriolis parameter
@@ -94,45 +93,16 @@ f = f.view(np.ma.MaskedArray)
 
 xxrot, yyrot, frot = u.rotate_and_interpolate(
     x, y, f, angle_rot, centerx, centery)
-fcut = u.cut(limits, frot)
+fcut = u.cut(cutlimits, frot)
 
 
 pm, pn, dmde, dndx = u.get_pmpn(x, y, angle_rot, centerx, centery)
-pmcut = u.cut(limits, pm)
-pncut = u.cut(limits, pn)
-dmdecut = u.cut(limits, dmde)
-dndxcut = u.cut(limits, dndx)
+pmcut = u.cut(cutlimits, pm)
+pncut = u.cut(cutlimits, pn)
+dmdecut = u.cut(cutlimits, dmde)
+dndxcut = u.cut(cutlimits, dndx)
 
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(pm, origin='lower', interpolation='nearest')
-plt.colorbar()
-fig.savefig('figures/pm.pdf')
-print('done')
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(pn, origin='lower', interpolation='nearest')
-plt.colorbar()
-fig.savefig('figures/pn.pdf')
-print('done')
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(dmde, origin='lower', interpolation='nearest')
-plt.colorbar()
-fig.savefig('figures/dmde.pdf')
-print('done')
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(dndx, origin='lower', interpolation='nearest')
-plt.colorbar()
-fig.savefig('figures/dndx.pdf')
-print('done')
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(dndx, origin='lower', interpolation='nearest')
-plt.colorbar()
-fig.savefig('figures/dndx.pdf')
-print('done')
-fig = plt.figure(figsize=(8, 8))
-p1 = plt.imshow(1 / pm, origin='lower', interpolation='nearest')
-plt.colorbar()
-fig.savefig('figures/1overpm.pdf')
-print('done')
+anglecut = angle_rot * np.ones((nycut, nxcut))
 
 # ###################################
 
@@ -147,8 +117,11 @@ grid.variables['spherical'][:] = 0
 grid.variables['f'][:] = fcut
 grid.variables['pm'][:] = pmcut
 grid.variables['pn'][:] = pncut
+grid.variables['dmde'][:] = dmdecut
+grid.variables['dndx'][:] = dndxcut
+grid.variables['angle'][:] = anglecut
 grid.close()
-
+print('done')
 # ###################################
 
 # fig = plt.figure(figsize=(8, 8))
@@ -174,6 +147,32 @@ grid.close()
 # fig = plt.figure(figsize=(8, 8))
 # p1 = plt.imshow(fcut, origin='lower', interpolation='nearest')
 # fig.savefig('figures/fcut.pdf')
+# print('done')
+
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(pm, origin='lower', interpolation='nearest')
+# plt.colorbar()
+# fig.savefig('figures/pm.pdf')
+# print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(pn, origin='lower', interpolation='nearest')
+# plt.colorbar()
+# fig.savefig('figures/pn.pdf')
+# print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(dmde, origin='lower', interpolation='nearest')
+# plt.colorbar()
+# fig.savefig('figures/dmde.pdf')
+# print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(dndx, origin='lower', interpolation='nearest')
+# plt.colorbar()
+# fig.savefig('figures/dndx.pdf')
+# print('done')
+# fig = plt.figure(figsize=(8, 8))
+# p1 = plt.imshow(dndx, origin='lower', interpolation='nearest')
+# plt.colorbar()
+# fig.savefig('figures/dndx.pdf')
 # print('done')
 
 # ###################################
