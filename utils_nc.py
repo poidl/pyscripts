@@ -11,14 +11,8 @@ def setstr(str):
         return ['yh', 'xh', 'meter']
 
 
-# def create_grd(grdname, lat, lon, str):
-
-
 def create_grd(grdname, ny, nx):
-    # dimy, dimx, units = setstr(str)
-    # ff = nc(grdname, 'w', format='NETCDF3_CLASSIC')
-    # ff.createDimension(dimy, np.size(lat))
-    # ff.createDimension(dimx, np.size(lon))
+
     dimx = 'xi'
     dimy = 'eta'
     ff = nc(grdname, 'w')
@@ -26,31 +20,8 @@ def create_grd(grdname, ny, nx):
     ff.createDimension(dimx, nx)
     ff.createDimension('scalar', 1)
 
-    # ff.createVariable(dimy, 'd', (dimy, ))
-    # tmp = ff.variables[dimy]
-    # if str == 'l':
-    #     setattr(tmp, "long_name", "Latitude")
-    # elif str == 'x':
-    #     setattr(tmp, "long_name", "y dist")
-    # setattr(tmp, "units", units)
-
-    # ff.createVariable(dimx, 'd', (dimx, ))
-    # tmp = ff.variables[dimx]
-    # if str == 'l':
-    #     setattr(tmp, "long_name", "Longitude")
-    # elif str == 'x':
-    #     setattr(tmp, "long_name", "x dist")
-    # setattr(tmp, "units", units)
-
-    # ff.createVariable('D', 'd', (dimy, dimx, ))
-    # tmp = ff.variables['D']
-    # setattr(tmp, "long_name", "Depth")
-    # setattr(tmp, "units", "meter")
-
     ff.createVariable('h', 'd', (dimy, dimx, ))
-    # tmp = ff.variables['D']
-    # setattr(tmp, "long_name", "Depth")
-    # setattr(tmp, "units", "meter")
+
     ff.createVariable('xl', 'd', ('scalar',))
     ff.createVariable('el', 'd', ('scalar',))
     ff.createVariable('spherical', 'i', ('scalar',))
@@ -60,6 +31,39 @@ def create_grd(grdname, ny, nx):
     ff.createVariable('dmde', 'd', (dimy, dimx, ))
     ff.createVariable('dndx', 'd', (dimy, dimx, ))
     ff.createVariable('angle', 'd', (dimy, dimx, ))
+
+    ff.close()
+
+
+def create_ini(grdname, nz, ny, nx):
+
+    # dimt = 'ocean_time'
+    dimx = 'xi'
+    dimy = 'eta'
+    dimz = 'k'
+    ff = nc(grdname, 'w')
+    ff.createDimension(dimz, nz)
+    ff.createDimension(dimy, ny)
+    ff.createDimension(dimx, nx)
+    ff.createDimension('scalar', 1)
+    ff.createVariable('ocean_time', 'd', ('scalar',))
+
+    ff.createVariable('zeta', 'd', (dimy, dimx, ))
+    ff.createVariable('ubar', 'd', (dimy, dimx, ))
+    ff.createVariable('vbar', 'd', (dimy, dimx, ))
+    ff.createVariable('u', 'd', (dimz, dimy, dimx, ))
+    ff.createVariable('v', 'd', (dimz, dimy, dimx, ))
+    ff.createVariable('temp', 'd', (dimz, dimy, dimx, ))
+    ff.createVariable('salt', 'd', (dimz, dimy, dimx, ))
+
+    # ff.createVariable('el', 'd', ('scalar',))
+    # ff.createVariable('spherical', 'i', ('scalar',))
+    # ff.createVariable('f', 'd', (dimy, dimx, ))
+    # ff.createVariable('pm', 'd', (dimy, dimx, ))
+    # ff.createVariable('pn', 'd', (dimy, dimx, ))
+    # ff.createVariable('dmde', 'd', (dimy, dimx, ))
+    # ff.createVariable('dndx', 'd', (dimy, dimx, ))
+    # ff.createVariable('angle', 'd', (dimy, dimx, ))
 
     ff.close()
 
