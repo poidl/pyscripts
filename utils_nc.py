@@ -56,14 +56,46 @@ def create_ini(grdname, nz, ny, nx):
     ff.createVariable('temp', 'd', (dimz, dimy, dimx, ))
     ff.createVariable('salt', 'd', (dimz, dimy, dimx, ))
 
-    # ff.createVariable('el', 'd', ('scalar',))
-    # ff.createVariable('spherical', 'i', ('scalar',))
-    # ff.createVariable('f', 'd', (dimy, dimx, ))
-    # ff.createVariable('pm', 'd', (dimy, dimx, ))
-    # ff.createVariable('pn', 'd', (dimy, dimx, ))
-    # ff.createVariable('dmde', 'd', (dimy, dimx, ))
-    # ff.createVariable('dndx', 'd', (dimy, dimx, ))
-    # ff.createVariable('angle', 'd', (dimy, dimx, ))
+    ff.close()
+
+
+def create_bry(grdname, nt, nz, ny, nx):
+
+    # dimt = 'ocean_time'
+    dimx = 'xi'
+    dimy = 'eta'
+    dimz = 'k'
+    dimt = 't'
+    ff = nc(grdname, 'w')
+    ff.createDimension(dimt, nt)
+    ff.createDimension(dimz, nz)
+    ff.createDimension(dimy, ny)
+    ff.createDimension(dimx, nx)
+    ocean_time = ff.createVariable('ocean_time', 'd', (dimt, ))
+    ff.createVariable('zeta', 'd', (dimt, dimy, dimx, ))
+    ff.createVariable('ubar', 'd', (dimt, dimy, dimx, ))
+    ff.createVariable('vbar', 'd', (dimt, dimy, dimx, ))
+    ff.createVariable('u', 'd', (dimt, dimz, dimy, dimx, ))
+    ff.createVariable('v', 'd', (dimt, dimz, dimy, dimx, ))
+    ff.createVariable('temp', 'd', (dimt, dimz, dimy, dimx, ))
+    ff.createVariable('salt', 'd', (dimt, dimz, dimy, dimx, ))
+
+    ff.close()
+
+
+def create_frc(grdname, nt, ny, nx):
+
+    dimx = 'xi'
+    dimy = 'eta'
+    dimt = 'sms_time'
+    ff = nc(grdname, 'w')
+    ff.createDimension(dimt, nt)
+    ff.createDimension(dimy, ny)
+    ff.createDimension(dimx, nx)
+    ff.createVariable('sms_time', 'd', (dimt, ))
+    var = ff.createVariable('sustr', 'd', (dimt, dimy, dimx, ))
+    # var.coordinates = 'lon lat'
+    ff.createVariable('svstr', 'd', (dimt, dimy, dimx, ))
 
     ff.close()
 
