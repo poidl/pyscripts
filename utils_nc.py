@@ -31,6 +31,7 @@ def create_grd(grdname, ny, nx):
     ff.createVariable('dmde', 'd', (dimy, dimx, ))
     ff.createVariable('dndx', 'd', (dimy, dimx, ))
     ff.createVariable('angle', 'd', (dimy, dimx, ))
+    ff.createVariable('mask_rho', 'd', (dimy, dimx, ))
 
     ff.close()
 
@@ -65,37 +66,82 @@ def create_bry(grdname, nt, nz, ny, nx):
     dimx = 'xi'
     dimy = 'eta'
     dimz = 'k'
-    dimt = 't'
     ff = nc(grdname, 'w')
-    ff.createDimension(dimt, nt)
+    ff.createDimension('zeta_time', nt)
+    ff.createDimension('v2d_time', nt)
+    ff.createDimension('v3d_time', nt)
+    ff.createDimension('salt_time', nt)
+    ff.createDimension('temp_time', nt)
     ff.createDimension(dimz, nz)
     ff.createDimension(dimy, ny)
     ff.createDimension(dimx, nx)
-    ocean_time = ff.createVariable('ocean_time', 'd', (dimt, ))
-    ff.createVariable('zeta', 'd', (dimt, dimy, dimx, ))
-    ff.createVariable('ubar', 'd', (dimt, dimy, dimx, ))
-    ff.createVariable('vbar', 'd', (dimt, dimy, dimx, ))
-    ff.createVariable('u', 'd', (dimt, dimz, dimy, dimx, ))
-    ff.createVariable('v', 'd', (dimt, dimz, dimy, dimx, ))
-    ff.createVariable('temp', 'd', (dimt, dimz, dimy, dimx, ))
-    ff.createVariable('salt', 'd', (dimt, dimz, dimy, dimx, ))
+    ff.createVariable('zeta_time', 'd', ('zeta_time', ))
+    ff.createVariable('zeta_west', 'd', ('zeta_time', dimy, ))
+    ff.createVariable('zeta_east', 'd', ('zeta_time', dimy, ))
+    ff.createVariable('zeta_south', 'd', ('zeta_time', dimx, ))
+    ff.createVariable('zeta_north', 'd', ('zeta_time', dimx, ))
+
+    ff.createVariable('v2d_time', 'd', ('v2d_time', ))
+    ff.createVariable('ubar_west', 'd', ('v2d_time', dimy, ))
+    ff.createVariable('ubar_east', 'd', ('v2d_time', dimy, ))
+    ff.createVariable('ubar_south', 'd', ('v2d_time', dimx, ))
+    ff.createVariable('ubar_north', 'd', ('v2d_time', dimx, ))
+    ff.createVariable('vbar_west', 'd', ('v2d_time', dimy, ))
+    ff.createVariable('vbar_east', 'd', ('v2d_time', dimy, ))
+    ff.createVariable('vbar_south', 'd', ('v2d_time', dimx, ))
+    ff.createVariable('vbar_north', 'd', ('v2d_time', dimx, ))
+
+    ff.createVariable('v3d_time', 'd', ('v3d_time', ))
+    ff.createVariable('u_west', 'd', ('v3d_time', dimz, dimy, ))
+    ff.createVariable('u_east', 'd', ('v3d_time', dimz, dimy, ))
+    ff.createVariable('u_south', 'd', ('v3d_time', dimz, dimx, ))
+    ff.createVariable('u_north', 'd', ('v3d_time', dimz, dimx, ))
+    ff.createVariable('v_west', 'd', ('v3d_time', dimz, dimy, ))
+    ff.createVariable('v_east', 'd', ('v3d_time', dimz, dimy, ))
+    ff.createVariable('v_south', 'd', ('v3d_time', dimz, dimx, ))
+    ff.createVariable('v_north', 'd', ('v3d_time', dimz, dimx, ))
+
+    ff.createVariable('temp_time', 'd', ('temp_time', ))
+    ff.createVariable('temp_west', 'd', ('temp_time', dimz, dimy, ))
+    ff.createVariable('temp_east', 'd', ('temp_time', dimz, dimy, ))
+    ff.createVariable('temp_south', 'd', ('temp_time', dimz, dimx, ))
+    ff.createVariable('temp_north', 'd', ('temp_time', dimz, dimx, ))
+
+    ff.createVariable('salt_time', 'd', ('salt_time', ))
+    ff.createVariable('salt_west', 'd', ('salt_time', dimz, dimy, ))
+    ff.createVariable('salt_east', 'd', ('salt_time', dimz, dimy, ))
+    ff.createVariable('salt_south', 'd', ('salt_time', dimz, dimx, ))
+    ff.createVariable('salt_north', 'd', ('salt_time', dimz, dimx, ))
+    # ff.createVariable('ubar', 'd', (dimt, dimy, dimx, ))
+    # ff.createVariable('vbar', 'd', (dimt, dimy, dimx, ))
+    # ff.createVariable('u', 'd', (dimt, dimz, dimy, dimx, ))
+    # ff.createVariable('v', 'd', (dimt, dimz, dimy, dimx, ))
+    # ff.createVariable('temp', 'd', (dimt, dimz, dimy, dimx, ))
+    # ff.createVariable('salt', 'd', (dimt, dimz, dimy, dimx, ))
 
     ff.close()
 
 
 def create_frc(grdname, nt, ny, nx):
 
-    dimx = 'xi'
-    dimy = 'eta'
-    dimt = 'sms_time'
     ff = nc(grdname, 'w')
-    ff.createDimension(dimt, nt)
-    ff.createDimension(dimy, ny)
-    ff.createDimension(dimx, nx)
-    ff.createVariable('sms_time', 'd', (dimt, ))
-    var = ff.createVariable('sustr', 'd', (dimt, dimy, dimx, ))
-    # var.coordinates = 'lon lat'
-    ff.createVariable('svstr', 'd', (dimt, dimy, dimx, ))
+
+    ff.createDimension('sms_time', nt)
+    ff.createDimension('shf_time', nt)
+    ff.createDimension('swf_time', nt)
+    ff.createDimension('xi', nx)
+    ff.createDimension('xi_u', nx - 1)
+    ff.createDimension('eta', ny)
+    ff.createDimension('eta_v', ny - 1)
+
+    ff.createVariable('sms_time', 'd', ('sms_time', ))
+    ff.createVariable('shf_time', 'd', ('shf_time', ))
+    ff.createVariable('swf_time', 'd', ('swf_time', ))
+
+    ff.createVariable('sustr', 'd', ('sms_time', 'eta', 'xi_u', ))
+    ff.createVariable('svstr', 'd', ('sms_time', 'eta_v', 'xi', ))
+    ff.createVariable('shflux', 'd', ('shf_time', 'eta', 'xi', ))
+    ff.createVariable('swflux', 'd', ('swf_time', 'eta', 'xi', ))
 
     ff.close()
 

@@ -108,20 +108,20 @@ def rotate_and_interpolate(x, y, z, phi, centerx, centery):
     return (xxrot, yyrot, zrot)
 
 
-def cut(limits, z):
+def cut(rectangle, z):
     """Cut domain to rectangular shape (e.g. after rotating)
 
     Parameters
     ----------
-    limits: boundary indices of the domain (included)
+    rectangle: tuple ((y,x), height, width) in units of indices
     z: data on a rectangular mesh
     """
 
     mask = np.ones(z.shape, dtype=bool)
-    y1 = limits[0]
-    y2 = limits[1]
-    x1 = limits[2]
-    x2 = limits[3]
+    y1 = rectangle[0][0]
+    x1 = rectangle[0][1]
+    y2 = y1 + rectangle[1]
+    x2 = x1 + rectangle[2]
     mask[y1:y2, x1:x2] = 0
 
     # alert if masked parts (e.g. fill values or nans) are not cut
