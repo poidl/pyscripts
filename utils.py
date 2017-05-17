@@ -3,6 +3,8 @@
 """Useful functions"""
 
 import matplotlib.pyplot as plt
+import matplotlib.path as path
+import matplotlib.patches as patches
 import numpy as np
 from scipy import interpolate
 
@@ -60,6 +62,7 @@ def rotate_and_interpolate(x, y, z, phi, centerx, centery):
     """
 
     ny, nx = z.shape
+
     dx = np.diff(x)
     dy = np.diff(y)
 
@@ -67,9 +70,7 @@ def rotate_and_interpolate(x, y, z, phi, centerx, centery):
         raise Exception(
             "Aborted. Array is not masked, fill values may affect interpolation.")
 
-    if (len(x) != nx) | (len(y) != ny) | (dx[0] != dx[-1]) | (dy[0] != dy[-1]) | (dx[0] != dy[0]):
-        raise Exception(
-            "Aborted. Not smart enough to handle irregular grids.")
+    test_grid_uniform(x, y)
 
     xx, yy = np.meshgrid(x, y)
 
@@ -177,14 +178,7 @@ def get_pmpn(x, y, phi, centerx, centery):
     centery: center y-coord
     """
 
-    if (x.ndim != 1) | (y.ndim != 1):
-        raise Exception(
-            "Aborted. Input arrays must be one-dimensional")
-    dx = np.diff(x)
-    dy = np.diff(y)
-    if (dx[0] != dx[-1]) | (dy[0] != dy[-1]):
-        raise Exception(
-            "Aborted. Not smart enough to handle non-uniform grids.")
+    test_grid_uniform(x, y)
 
     # Must convert to double, differential lats/lons are too small for using
     # f32
@@ -260,9 +254,33 @@ def get_pmpn(x, y, phi, centerx, centery):
     return (pm, pn, dmde, dndx)
 
 
+def test_grid_uniform(x, y):
+    if (x.ndim != 1) | (y.ndim != 1):
+        raise Exception(
+            "Aborted. Input arrays must be one-dimensional")
+
+    dx = np.diff(x)
+    dy = np.diff(y)
+    # testing for equidistant lat/lon grid fails below if the increments are
+    # not rounded (float32)
+    dx0 = np.around(dx[0], decimals=5)
+    dx1 = np.around(dx[-1], decimals=5)
+    dy0 = np.around(dy[0], decimals=5)
+    dy1 = np.around(dy[-1], decimals=5)
+    if (dx0 != dx1) | (dy0 != dy1) | (dx0 != dy0) | (dx1 != dy1):
+        raise Exception(
+            "Aborted. Not smart enough to handle non-uniform grids.")
+
+
 def myplot2d(z, name):
     fig = plt.figure(figsize=(8, 8))
     p1 = plt.imshow(z, origin='lower', interpolation='nearest')
     plt.colorbar()
     fig.savefig('figures/' + name + '.pdf')
     print('done')
+
+
+def myplot_add_path(vertices, axes):
+    p = path.Path(vertices)
+    patch = patches.PathPatch(p, facecolor='none', lw=1)
+    axes.add_patch(patch)
