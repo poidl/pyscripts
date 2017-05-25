@@ -145,7 +145,6 @@ def spherical_distance(lat1, lat2, lon1, lon2):
 
     Parameters
     ----------
-    r: radius of the sphere
     lat1: 2-d array of latitudes (in degrees) of point 1
     lat2: latitudes of point 2 (degrees)
     lon1: longitudes of point 1 (degrees)
@@ -284,3 +283,36 @@ def myplot_add_path(vertices, axes):
     p = path.Path(vertices)
     patch = patches.PathPatch(p, facecolor='none', lw=1)
     axes.add_patch(patch)
+
+
+def hanning_smoother(h):
+    """Copied from Romstools. TODO: find out whether this is Hann or Hamming?"""
+    [M, L] = np.array(h.shape)
+    L = L - 1
+    M = M - 1
+    Mm = M - 1
+    Mmm = M - 2
+    Lm = L - 1
+    Lmm = L - 2
+
+    h[1:Mm, 1:Lm] = 0.125 * (h[0:Mmm, 1:Lm] + h[2:M, 1:Lm] +
+                             h[1:Mm, 0:Lmm] + h[1:Mm, 2:L] +
+                             4 * h[1:Mm, 1:Lm])
+
+    h[0, :] = h[1, :]
+    h[M, :] = h[Mm, :]
+    h[:, 0] = h[:, 1]
+    h[:, L] = h[:, Lm]
+    return h
+
+
+def mercator_lonlat2xy(lon, lat):
+    R = 6372.8e3  # Earth radius
+    if (lat.ndim != 1) | (lon.ndim != 1):
+        raise Exception(
+            "Aborted. Input arrays must be one-dimensional")
+    lon = np.radians(lon)
+    lat = np.radians(lat)
+    x = R * lon
+    y = R * np.log(np.tan(np.pi / 4 + lat / 2))
+    return x, y
