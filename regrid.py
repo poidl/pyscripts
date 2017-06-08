@@ -5,23 +5,36 @@
 import numpy as np
 
 
-def envelope_1d(x):
-    """Regrid to envelope 1d.
+def envelope(x, axis=-1):
+    """
+    Regrid to envelope.
 
     Parameters
     ----------
-    x: 1-d array
+    x: array of arbitrary dimension
+    axis: axis along which to regrid
     """
-    dx = np.diff(x)
 
-    if np.any(np.any(dx <= 0)):
-        raise Exception(
-            "Aborted. Input array must be strictly monotonically increasing")
+    shape = list(x.shape)
+    shape[axis] = shape[axis] + 1
+    xn = np.nan * np.ones(shape)
 
-    xn = np.nan * np.ones(len(x) + 1)
-    xn[1:-1] = x[:-1] + 0.5 * dx
+    dx = np.diff(x, 1, axis=axis)
 
-    xn[0] = x[0] - 0.5 * dx[0]
-    xn[-1] = x[-1] + 0.5 * dx[-1]
+    s = [slice(None)]
+    t = s * x.ndim
+    t1 = t.copy()
+    t2l = t.copy()
+    t2r = t.copy()
+    t3 = t.copy()
+    t1[axis] = slice(0, 1)
+    t2l[axis] = slice(1, -1, None)
+    t2r[axis] = slice(None, -1, None)
+    t3[axis] = slice(-1, None)
+
+    xn[t2l] = x[t2r] + 0.5 * dx
+
+    xn[t1] = x[t1] - 0.5 * dx[t1]
+    xn[t3] = x[t3] + 0.5 * dx[t3]
 
     return xn
