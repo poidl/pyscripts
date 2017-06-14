@@ -432,7 +432,7 @@ def projection_omerc(lon, lat, lon1, lat1, lon2, lat2, beta, k0=1):
 
 def projection_omerc_proj4_v1(lon, lat, lon1, lat1, alpha, k0=1):
     """
-    Oblique mercator projection of a spheroid (forward). Optionally secant.
+    Forward blique mercator projection of a spheroid. Optionally secant.
 
     Parameters
     ----------
@@ -444,18 +444,48 @@ def projection_omerc_proj4_v1(lon, lat, lon1, lat1, alpha, k0=1):
     k0=1: Scale factor for secant projections
     """
 
-    assert ((lat.ndim == 1) & (lon.ndim == 1)
-            ), "Aborted. Input arrays must be one-dimensional."
+    if not np.isscalar(lon):
+        assert ((lat.ndim == 1) & (lon.ndim == 1)
+                ), "Aborted. Input arrays must be one-dimensional."
 
     proj_cmd = (
         'proj '
         '+proj=omerc '
-        '+alpha={0:.5f} +gamma=0 '
+        '+alpha={0:.5f} '
         '+lat_0={1:.5f} +lonc={2:.5f} '
         'proj_input > proj_output'
     ).format(alpha, lat1, lon1)
 
     return call_proj(lon, lat, proj_cmd)
+
+
+def projection_omerc_proj4_v1_inv(x, y, lon1, lat1, alpha, k0=1):
+    """
+    Inverse oblique mercator projection of a spheroid. Optionally secant.
+
+    Parameters
+    ----------
+    x: 1-d array of longitudes (degrees)
+    y: 1-d array of latitudes (degrees)
+    lon1: Lon. of point defining central line
+    lat1: Lat. of point defining central line
+    alpha: Azimuth of the central line in degrees clockwise from north
+    k0=1: Scale factor for secant projections
+    """
+
+    if not np.isscalar(x):
+        assert ((x.ndim == 1) & (y.ndim == 1)
+                ), "Aborted. Input arrays must be one-dimensional."
+
+    proj_cmd = (
+        'proj -I -f \'% .4f\' '
+        '+proj=omerc '
+        '+alpha={0:.5f} '
+        '+lat_0={1:.5f} +lonc={2:.5f} '
+        'proj_input > proj_output'
+    ).format(alpha, lat1, lon1)
+
+    return call_proj(x, y, proj_cmd)
 
 
 def projection_omerc_proj4_v2(lon, lat, lon1, lat1, lon2, lat2, k0=1):
@@ -473,8 +503,9 @@ def projection_omerc_proj4_v2(lon, lat, lon1, lat1, lon2, lat2, k0=1):
     k0=1: Scale factor for secant projections
     """
 
-    assert ((lat.ndim == 1) & (lon.ndim == 1)
-            ), "Aborted. Input arrays must be one-dimensional."
+    if not np.isscalar(lon):
+        assert ((lat.ndim == 1) & (lon.ndim == 1)
+                ), "Aborted. Input arrays must be one-dimensional."
 
     proj_cmd = (
         'proj '
@@ -486,15 +517,15 @@ def projection_omerc_proj4_v2(lon, lat, lon1, lat1, lon2, lat2, k0=1):
     return call_proj(lon, lat, proj_cmd)
 
 
-def call_proj(lon, lat, cmd):
+def call_proj(x, y, cmd):
     """System call to proj"""
-    x, y = np.meshgrid(lon, lat)
 
     f = open('./proj_input', 'w')
-    xf = x.flatten()
-    yf = y.flatten()
-    for i, _ in enumerate(xf):
-        f.write('{0:.2f} {1:.2f}\n'.format(xf[i], yf[i]))
+    if np.isscalar(x):
+        f.write('{0:.2f} {1:.2f}\n'.format(x, y))
+    else:
+        for i, _ in enumerate(x):
+            f.write('{0:.2f} {1:.2f}\n'.format(x[i], y[i]))
 
     f.close()
     print('Running \'' + cmd + '\'')
@@ -505,7 +536,69 @@ def call_proj(lon, lat, cmd):
     )
 
     res = np.loadtxt('proj_output')
-    xout = np.reshape(res[:, 0], (len(lat), len(lon)))
-    yout = np.reshape(res[:, 1], (len(lat), len(lon)))
+
+    if np.isscalar(x):
+        xout = res[0]
+        yout = res[1]
+    else:
+        xout = res[:, 0]
+        yout = res[:, 1]
+
+    return xout, yout
+
+
+def get_dist_proj(lon1, lat1, lon2, lat2):
+    """Geodesic computations with geod (proj4)
+
+    Parameters
+    ----------
+    lon1: 1-d array
+    lat1: 1-d array
+    lon2: 1-d array
+    lat2: 1-d array
+    """
+
+    assert ((lat1.ndim == 1) &
+            (lon1.ndim == 1) &
+            (lat2.ndim == 1) &
+            (lon2.ndim == 1)
+            ), "Aborted. Input arrays must be one-dimensional."
+
+    geod_cmd = (
+        'geod -I -f \'% .4f\' '
+        '+ellps=WGS84 '
+        'geod_input > geod_output'
+    )
+
+    return call_geod(lon1, lat1, lon2, lat2, geod_cmd)
+
+
+def call_geod(x1, y1, x2, y2, cmd):
+    """System call to geod"""
+
+    f = open('./geod_input', 'w')
+    if np.isscalar(x1):
+        f.write('{0:.2f} {1:.2f} {2:.2f} {3:.2f}\n'.format(x1, y1, x2, y2))
+    else:
+        for i, _ in enumerate(x1):
+            f.write('{0:.2f} {1:.2f} {2:.2f} {3:.2f}\n'.format(
+                y1[i], x1[i], y2[i], x2[i]))
+
+    f.close()
+    print('Running \'' + cmd + '\'')
+    subprocess.run(
+        cmd,
+        shell=True,
+        check=True
+    )
+
+    res = np.loadtxt('geod_output')
+
+    if np.isscalar(x1):
+        xout = res[0]
+        yout = res[1]
+    else:
+        xout = res[:, 0]
+        yout = res[:, 1]
 
     return xout, yout
