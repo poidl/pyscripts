@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 import regrid as regrid
 
 fname = '../../../../../work/data/ETOPO2v2g_f4.nc'
+FIGPATH = '../../figures'
 
 # Region covering north-west America and the North-east pacific
 lonmin = -158.5
@@ -180,7 +181,7 @@ pos2 = [0.89, 0.1, 0.03, 0.8]
 ax2 = fig.add_axes(pos2)
 plt.colorbar(p1, ax2)
 
-fig.savefig('figures/projection_omerc.png')
+fig.savefig(FIGPATH + '/projection_omerc.png')
 print('done')
 
 # #####################################
@@ -215,7 +216,7 @@ pos2 = [0.89, 0.1, 0.03, 0.8]
 ax2 = fig.add_axes(pos2)
 plt.colorbar(p1, ax2)
 
-fig.savefig('figures/projection_omerc_rotated.png')
+fig.savefig(FIGPATH + '/projection_omerc_rotated.png')
 print('done')
 
 # ###################################
@@ -225,5 +226,5 @@ fig = plt.figure(figsize=(8, 8))
 plt.imshow(area)
 plt.colorbar()
 
-fig.savefig('figures/projection_omerc_area.png')
+fig.savefig(FIGPATH + '/projection_omerc_area.png')
 print('done')
