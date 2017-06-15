@@ -25,6 +25,7 @@ from scipy import interpolate
 import matplotlib
 import matplotlib.pyplot as plt
 import regrid as regrid
+import projections as proj
 
 fname = '../../../../../work/data/ETOPO2v2g_f4.nc'
 FIGPATH = '../../figures'
@@ -93,7 +94,7 @@ k0 = 1
 xgr, ygr = u.rotate_origin(xg, yg, angle_rot)
 
 # inverse projection of the rotated grid
-long, latg = u.projection_omerc_v1_inv(
+long, latg = proj.projection_omerc_v1_inv(
     xgr.flatten(), ygr.flatten(), lonc, latc, np.degrees(angle_rot), k0)
 
 long = np.reshape(long, (nyg, nxg))
@@ -106,16 +107,16 @@ latg1 = latg[:, :-1]
 long2 = long[:, 1:]
 latg2 = latg[:, 1:]
 
-dx = u.get_dist_proj(long1.flatten(), latg1.flatten(),
-                     long2.flatten(), latg2.flatten())
+dx = proj.get_dist_proj(long1.flatten(), latg1.flatten(),
+                        long2.flatten(), latg2.flatten())
 
 long1 = long[:-1, :]
 latg1 = latg[:-1, :]
 long2 = long[1:, :]
 latg2 = latg[1:, :]
 
-dy = u.get_dist_proj(long1.flatten(), latg1.flatten(),
-                     long2.flatten(), latg2.flatten())
+dy = proj.get_dist_proj(long1.flatten(), latg1.flatten(),
+                        long2.flatten(), latg2.flatten())
 
 dx = np.reshape(dx, (nyg, nxg - 1))
 dy = np.reshape(dy, (nyg - 1, nxg))
@@ -133,7 +134,7 @@ area = 0.25 * (
 # project the entire domain for plotting
 lon, lat = np.meshgrid(lon, lat)
 
-x, y = u.projection_omerc_v1(
+x, y = proj.projection_omerc_v1(
     lon.flatten(), lat.flatten(), lonc, latc, np.degrees(angle_rot), k0)
 
 x = np.reshape(x, (ny, nx))
@@ -169,7 +170,7 @@ ax1.set_ylabel('Projected (planar) distance (1000 km).')
 ax1.grid(color='k')
 
 # sanity-check whether origin is where it's supposed to be
-xc, yc = u.projection_omerc_v1(
+xc, yc = proj.projection_omerc_v1(
     lonc, latc, lonc, latc, np.degrees(angle_rot), k0)
 
 # Draw the grid. Note that this is the non-rotated variable, since
@@ -204,7 +205,7 @@ ax1.set_ylabel('Projected (planar) distance (1000 km).')
 ax1.grid(color='k')
 
 # sanity-check whether origin is where it's supposed to be
-xc, yc = u.projection_omerc_v1(
+xc, yc = proj.projection_omerc_v1(
     lonc, latc, lonc, latc, np.degrees(angle_rot), k0)
 
 # Draw the grid. Note that this is the non-rotated variable, since
