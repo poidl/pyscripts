@@ -8,6 +8,7 @@ import matplotlib.patches as patches
 import numpy as np
 from scipy import interpolate
 import subprocess
+import os
 
 import regrid as regrid
 
@@ -326,7 +327,7 @@ def projection_mercator(lon, lat):
     return x, y
 
 
-def projection_omerc(lon, lat, lon1, lat1, lon2, lat2, beta, k0=1):
+def projection_omerc_spherical(lon, lat, lon1, lat1, lon2, lat2, beta, k0=1):
     """
     Oblique mercator projection of a sphere (forward). Optionally secant.
 
@@ -406,7 +407,7 @@ def projection_omerc(lon, lat, lon1, lat1, lon2, lat2, beta, k0=1):
     # phi0 = 0
     lam0 = lamp + np.pi / 2
     lam_, phi_ = np.meshgrid(lam, phi)
-    # phi_, lam_ = np.meshgrid(phi, lam)
+
     A = (
         + np.sin(phip) * np.sin(phi_)
         - np.cos(phip) * np.cos(phi_) * np.sin(lam_ - lam0)
@@ -430,7 +431,7 @@ def projection_omerc(lon, lat, lon1, lat1, lon2, lat2, beta, k0=1):
     return x, y, lonp, latp, lono, lato
 
 
-def projection_omerc_proj4_v1(lon, lat, lon1, lat1, alpha, k0=1):
+def projection_omerc_v1(lon, lat, lon1, lat1, alpha, k0=1):
     """
     Forward blique mercator projection of a spheroid. Optionally secant.
 
@@ -459,7 +460,7 @@ def projection_omerc_proj4_v1(lon, lat, lon1, lat1, alpha, k0=1):
     return call_proj(lon, lat, proj_cmd)
 
 
-def projection_omerc_proj4_v1_inv(x, y, lon1, lat1, alpha, k0=1):
+def projection_omerc_v1_inv(x, y, lon1, lat1, alpha, k0=1):
     """
     Inverse oblique mercator projection of a spheroid. Optionally secant.
 
@@ -488,9 +489,9 @@ def projection_omerc_proj4_v1_inv(x, y, lon1, lat1, alpha, k0=1):
     return call_proj(x, y, proj_cmd)
 
 
-def projection_omerc_proj4_v2(lon, lat, lon1, lat1, lon2, lat2, k0=1):
+def projection_omerc_v2(lon, lat, lon1, lat1, lon2, lat2, k0=1):
     """
-    Oblique mercator projection of a sphere (forward). Optionally secant.
+    Oblique mercator projection of a spheroid (forward). Optionally secant.
 
     Parameters
     ----------
@@ -522,10 +523,10 @@ def call_proj(x, y, cmd):
 
     f = open('./proj_input', 'w')
     if np.isscalar(x):
-        f.write('{0:.2f} {1:.2f}\n'.format(x, y))
+        f.write('{0:.4f} {1:.4f}\n'.format(x, y))
     else:
         for i, _ in enumerate(x):
-            f.write('{0:.2f} {1:.2f}\n'.format(x[i], y[i]))
+            f.write('{0:.4f} {1:.4f}\n'.format(x[i], y[i]))
 
     f.close()
     print('Running \'' + cmd + '\'')
@@ -536,6 +537,9 @@ def call_proj(x, y, cmd):
     )
 
     res = np.loadtxt('proj_output')
+    # clean up
+    os.remove('proj_input')
+    os.remove('proj_output')
 
     if np.isscalar(x):
         xout = res[0]
@@ -578,10 +582,10 @@ def call_geod(x1, y1, x2, y2, cmd):
 
     f = open('./geod_input', 'w')
     if np.isscalar(x1):
-        f.write('{0:.2f} {1:.2f} {2:.2f} {3:.2f}\n'.format(x1, y1, x2, y2))
+        f.write('{0:.4f} {1:.4f} {2:.4f} {3:.4f}\n'.format(x1, y1, x2, y2))
     else:
         for i, _ in enumerate(x1):
-            f.write('{0:.2f} {1:.2f} {2:.2f} {3:.2f}\n'.format(
+            f.write('{0:.4f} {1:.4f} {2:.4f} {3:.4f}\n'.format(
                 y1[i], x1[i], y2[i], x2[i]))
 
     f.close()
@@ -594,11 +598,13 @@ def call_geod(x1, y1, x2, y2, cmd):
 
     res = np.loadtxt('geod_output')
 
-    if np.isscalar(x1):
-        xout = res[0]
-        yout = res[1]
-    else:
-        xout = res[:, 0]
-        yout = res[:, 1]
+    # clean up
+    os.remove('geod_input')
+    os.remove('geod_output')
 
-    return xout, yout
+    if np.isscalar(x1):
+        dist = res[2]
+    else:
+        dist = res[:, 2]
+
+    return dist
