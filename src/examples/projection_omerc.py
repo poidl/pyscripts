@@ -84,14 +84,14 @@ nyg, nxg = xg.shape
 # azimuth
 lonc = -131
 latc = 40
-angle_rot = -0.5 * np.pi / 2
+angle_rot = -0.25 * np.pi / 2
 k0 = 1
 
 # currently (June 15th 2017) the +no_rot switch is broken in proj:
 # https://github.com/OSGeo/proj.4/issues/523#issuecomment-306779910
 # This means proj doesn't rotate the domain according to the defined
 # azimuth. So we have to rotate ourselves:
-xgr, ygr = u.rotate_origin(xg, yg, angle_rot)
+xgr, ygr = u.rotate_origin(xg, yg, -angle_rot - np.pi / 2)
 
 # inverse projection of the rotated grid
 long, latg = proj.projection_omerc_v1_inv(
@@ -148,7 +148,7 @@ ye = regrid.envelope(y, axis=0)
 ye = regrid.envelope(ye, axis=1)
 
 # rotate the entire domain for plotting
-xer, yer = u.rotate_origin(xe, ye, -angle_rot)
+xer, yer = u.rotate_origin(xe, ye, angle_rot + np.pi / 2)
 
 
 # #####################################

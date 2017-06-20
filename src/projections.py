@@ -4,6 +4,10 @@ import numpy as np
 import subprocess
 import os
 
+# mean radius of the earth
+R = 6371008.8
+
+
 def projection_mercator(lon, lat):
     """Mercator projection (forward)
 
@@ -147,8 +151,8 @@ def projection_omerc_v1(lon, lat, lon1, lat1, alpha, k0=1):
     proj_cmd = (
         'proj '
         '+proj=omerc '
-        '+alpha={0:.5f} '
-        '+lat_0={1:.5f} +lonc={2:.5f} '
+        '+alpha={0:.8f} '
+        '+lat_0={1:.14f} +lonc={2:.14f} '
         'proj_input > proj_output'
     ).format(alpha, lat1, lon1)
 
@@ -174,10 +178,10 @@ def projection_omerc_v1_inv(x, y, lon1, lat1, alpha, k0=1):
                 ), "Aborted. Input arrays must be one-dimensional."
 
     proj_cmd = (
-        'proj -I -f \'% .4f\' '
+        'proj -I -f \'% .30f\' '
         '+proj=omerc '
-        '+alpha={0:.5f} '
-        '+lat_0={1:.5f} +lonc={2:.5f} '
+        '+alpha={0:.8f} '
+        '+lat_0={1:.14f} +lonc={2:.14f} '
         'proj_input > proj_output'
     ).format(alpha, lat1, lon1)
 
@@ -206,7 +210,7 @@ def projection_omerc_v2(lon, lat, lon1, lat1, lon2, lat2, k0=1):
     proj_cmd = (
         'proj '
         '+proj=omerc '
-        '+lon_1={0:.5f} +lat_1={1:.5f} +lon_2={2:.5f} +lat_2={3:.5f} '
+        '+lon_1={0:.14f} +lat_1={1:.14f} +lon_2={2:.14f} +lat_2={3:.14f} '
         'proj_input > proj_output'
     ).format(lon1, lat1, lon2, lat2)
 
@@ -218,10 +222,10 @@ def call_proj(x, y, cmd):
 
     f = open('./proj_input', 'w')
     if np.isscalar(x):
-        f.write('{0:.4f} {1:.4f}\n'.format(x, y))
+        f.write('{0:.14f} {1:.14f}\n'.format(x, y))
     else:
         for i, _ in enumerate(x):
-            f.write('{0:.4f} {1:.4f}\n'.format(x[i], y[i]))
+            f.write('{0:.14f} {1:.14f}\n'.format(x[i], y[i]))
 
     f.close()
     print('Running \'' + cmd + '\'')
@@ -264,7 +268,7 @@ def get_dist_proj(lon1, lat1, lon2, lat2):
             ), "Aborted. Input arrays must be one-dimensional."
 
     geod_cmd = (
-        'geod -I -f \'% .4f\' '
+        'geod -I -f \'% .5f\' '
         '+ellps=WGS84 '
         'geod_input > geod_output'
     )
@@ -277,10 +281,10 @@ def call_geod(x1, y1, x2, y2, cmd):
 
     f = open('./geod_input', 'w')
     if np.isscalar(x1):
-        f.write('{0:.4f} {1:.4f} {2:.4f} {3:.4f}\n'.format(x1, y1, x2, y2))
+        f.write('{0:.30f} {1:.30f} {2:.30f} {3:.30f}\n'.format(x1, y1, x2, y2))
     else:
         for i, _ in enumerate(x1):
-            f.write('{0:.4f} {1:.4f} {2:.4f} {3:.4f}\n'.format(
+            f.write('{0:.30f} {1:.30f} {2:.30f} {3:.30f}\n'.format(
                 y1[i], x1[i], y2[i], x2[i]))
 
     f.close()

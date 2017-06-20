@@ -11,9 +11,6 @@ from scipy import interpolate
 
 import regrid as regrid
 
-# mean radius of the earth
-R = 6371008.8
-
 
 def rotate_origin(x, y, phi):
     """Rotate grids x an y by angle phi around origin of coordinate axis.
