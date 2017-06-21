@@ -84,7 +84,7 @@ nyg, nxg = xg.shape
 # azimuth
 lonc = -131
 latc = 40
-angle_rot = -0.25 * np.pi / 2
+angle_rot = -0.5 * np.pi / 2
 k0 = 1
 
 # currently (June 15th 2017) the +no_rot switch is broken in proj:
