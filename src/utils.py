@@ -46,68 +46,69 @@ def rotate(x, y, phi, centerx, centery):
 
     return (xrot, yrot)
 
+# DO NOT USE THIS: INSTEAD, INTERPOLATE ONTO POINTS OBTAINED FROM INVERSE
+# PROJECTION
+# def rotate_and_interpolate(x, y, z, phi, centerx, centery):
+#     """Rotate grids x an y by angle phi around center (cx,cy), interpolate z onto rotated grid.
 
-def rotate_and_interpolate(x, y, z, phi, centerx, centery):
-    """Rotate grids x an y by angle phi around center (cx,cy), interpolate z onto rotated grid.
+#     Parameters
+#     ----------
+#     x: 1-d array
+#     y: 1-d array
+#     z: Masked data on a rectangular mesh defined by x and y
+#     phi: angle of rotation
+#     centerx: center x-coord
+#     centery: center y-coord
 
-    Parameters
-    ----------
-    x: 1-d array
-    y: 1-d array
-    z: Masked data on a rectangular mesh defined by x and y
-    phi: angle of rotation
-    centerx: center x-coord
-    centery: center y-coord
+#     TODO: take account of varying lat/lon spacing
+#     """
 
-    TODO: take account of varying lat/lon spacing
-    """
+#     ny, nx = z.shape
 
-    ny, nx = z.shape
+#     dx = np.diff(x)
+#     dy = np.diff(y)
 
-    dx = np.diff(x)
-    dy = np.diff(y)
+#     if type(z) is not np.ma.MaskedArray:
+#         raise Exception(
+#             "Aborted. Array is not masked, fill values may affect interpolation.")
 
-    if type(z) is not np.ma.MaskedArray:
-        raise Exception(
-            "Aborted. Array is not masked, fill values may affect interpolation.")
+#     test_grid_uniform(x, y)
 
-    test_grid_uniform(x, y)
+#     xx, yy = np.meshgrid(x, y)
 
-    xx, yy = np.meshgrid(x, y)
+#     # translate, rotate, translate back
+#     xxrot, yyrot = rotate(xx, yy, phi, centerx, centery)
 
-    # translate, rotate, translate back
-    xxrot, yyrot = rotate(xx, yy, phi, centerx, centery)
+#     # output is initially masked everywhere
+#     o = np.nan * np.ones((ny, nx))
+#     zrot = np.ma.array(o, mask=np.ones((ny, nx)))
 
-    # output is initially masked everywhere
-    o = np.nan * np.ones((ny, nx))
-    zrot = np.ma.array(o, mask=np.ones((ny, nx)))
+#     # suppress warning
+#     zrot.unshare_mask()
 
-    # suppress warning
-    zrot.unshare_mask()
+#     # TODO: do this more efficiently, but in a way that accounts for masked
+#     # values. Here, each rotated data point is considered individually, with
+#     # its 4 surrounding gridpoints on the original grid.
 
-    # TODO: do this more efficiently, but in a way that accounts for masked
-    # values. Here, each rotated data point is considered individually, with
-    # its 4 surrounding gridpoints on the original grid.
+#     for jrot in np.arange(ny):
+#         for irot in np.arange(nx):
+#             xp = xxrot[jrot, irot]
+#             yp = yyrot[jrot, irot]
+#             i = x <= xp
+#             i = int(sum(i)) - 1
+#             j = y <= yp
+#             j = int(sum(j)) - 1
 
-    for jrot in np.arange(ny):
-        for irot in np.arange(nx):
-            xp = xxrot[jrot, irot]
-            yp = yyrot[jrot, irot]
-            i = x <= xp
-            i = int(sum(i)) - 1
-            j = y <= yp
-            j = int(sum(j)) - 1
+#             # check if rotated point is outside of original domain
+#             if (i == nx - 1) | (j == ny - 1) | (i < 0) | (j < 0):
+#                 continue
 
-            # check if rotated point is outside of original domain
-            if (i == nx - 1) | (j == ny - 1) | (i < 0) | (j < 0):
-                continue
+#             # interpolate
+#             f = interpolate.interp2d(
+#                 [y[j], y[j + 1]], [x[i], x[i + 1]], z[j:j + 2, i:i + 2])
+#             zrot[jrot, irot] = f(yp, xp)
 
-            # interpolate
-            f = interpolate.interp2d(
-                [y[j], y[j + 1]], [x[i], x[i + 1]], z[j:j + 2, i:i + 2])
-            zrot[jrot, irot] = f(yp, xp)
-
-    return (xxrot, yyrot, zrot)
+#     return (xxrot, yyrot, zrot)
 
 
 def cut(rectangle, z):
@@ -163,93 +164,93 @@ def spherical_distance(lat1, lat2, lon1, lon2):
 
     return R * c
 
+# DO NOT USE THIS
+# def get_pmpn(x, y, phi, centerx, centery):
+#     """Inverse of differential distances in XI at RHO-points, after optional rotation by angle phi.
 
-def get_pmpn(x, y, phi, centerx, centery):
-    """Inverse of differential distances in XI at RHO-points, after optional rotation by angle phi.
+#     Parameters
+#     ----------
+#     x: 1-d array
+#     y: 1-d array
+#     phi: angle of rotation
+#     centerx: center x-coord
+#     centery: center y-coord
+#     """
 
-    Parameters
-    ----------
-    x: 1-d array
-    y: 1-d array
-    phi: angle of rotation
-    centerx: center x-coord
-    centery: center y-coord
-    """
+#     test_grid_uniform(x, y)
 
-    test_grid_uniform(x, y)
+#     # Must convert to double, differential lats/lons are too small for using
+#     # f32
+#     dx = np.double(np.diff(x)[0])
+#     cs = dx * np.ones(len(x))
+#     cs = np.cumsum(cs) - dx
+#     x = np.double(x[0]) + cs
+#     dy = np.double(np.diff(y)[0])
+#     cs = dy * np.ones(len(y))
+#     cs = np.cumsum(cs) - dy
+#     y = np.double(y[0]) + cs
 
-    # Must convert to double, differential lats/lons are too small for using
-    # f32
-    dx = np.double(np.diff(x)[0])
-    cs = dx * np.ones(len(x))
-    cs = np.cumsum(cs) - dx
-    x = np.double(x[0]) + cs
-    dy = np.double(np.diff(y)[0])
-    cs = dy * np.ones(len(y))
-    cs = np.cumsum(cs) - dy
-    y = np.double(y[0]) + cs
+#     nx = len(x)
+#     ny = len(y)
 
-    nx = len(x)
-    ny = len(y)
+#     lx = regrid.envelope_1d(x)
+#     ly = regrid.envelope_1d(y)
 
-    lx = regrid.envelope_1d(x)
-    ly = regrid.envelope_1d(y)
+#     ddx1 = (slice(None), slice(None, -1))
+#     ddx2 = (slice(None), slice(1, None))
+#     ddy1 = (slice(None, -1), slice(None))
+#     ddy2 = (slice(1, None), slice(None),)
 
-    ddx1 = (slice(None), slice(None, -1))
-    ddx2 = (slice(None), slice(1, None))
-    ddy1 = (slice(None, -1), slice(None))
-    ddy2 = (slice(1, None), slice(None),)
+#     # pm
+#     xx, yy = np.meshgrid(lx, y)
+#     xrot, yrot = rotate(xx, yy, phi, centerx, centery)
 
-    # pm
-    xx, yy = np.meshgrid(lx, y)
-    xrot, yrot = rotate(xx, yy, phi, centerx, centery)
+#     i1 = ddx1
+#     i2 = ddx2
+#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
+#         i1].flatten(), xrot[i2].flatten())
+#     dist = np.reshape(dist, (ny, nx))
 
-    i1 = ddx1
-    i2 = ddx2
-    dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-        i1].flatten(), xrot[i2].flatten())
-    dist = np.reshape(dist, (ny, nx))
+#     pm = 1 / dist
 
-    pm = 1 / dist
+#     # pn
+#     xx, yy = np.meshgrid(x, ly)
+#     xrot, yrot = rotate(xx, yy, phi, centerx, centery)
 
-    # pn
-    xx, yy = np.meshgrid(x, ly)
-    xrot, yrot = rotate(xx, yy, phi, centerx, centery)
+#     i1 = ddy1
+#     i2 = ddy2
+#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
+#         i1].flatten(), xrot[i2].flatten())
+#     dist = np.reshape(dist, (ny, nx))
 
-    i1 = ddy1
-    i2 = ddy2
-    dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-        i1].flatten(), xrot[i2].flatten())
-    dist = np.reshape(dist, (ny, nx))
+#     pn = 1 / dist
 
-    pn = 1 / dist
+#     # dmde: ETA-derivative of inverse metric factor pm, d(1/pm)/d(ETA).
+#     xx, yy = np.meshgrid(lx, ly)
+#     xrot, yrot = rotate(xx, yy, phi, centerx, centery)
 
-    # dmde: ETA-derivative of inverse metric factor pm, d(1/pm)/d(ETA).
-    xx, yy = np.meshgrid(lx, ly)
-    xrot, yrot = rotate(xx, yy, phi, centerx, centery)
+#     i1 = ddx1
+#     i2 = ddx2
+#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
+#         i1].flatten(), xrot[i2].flatten())
+#     dist = np.reshape(dist, (ny + 1, nx))
 
-    i1 = ddx1
-    i2 = ddx2
-    dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-        i1].flatten(), xrot[i2].flatten())
-    dist = np.reshape(dist, (ny + 1, nx))
+#     i1 = ddy1
+#     i2 = ddy2
+#     dmde = dist[i2] - dist[i1]
 
-    i1 = ddy1
-    i2 = ddy2
-    dmde = dist[i2] - dist[i1]
+#     # dndx: XI-derivative of inverse metric factor pn, d(1/pn)/d(XI).
+#     i1 = ddy1
+#     i2 = ddy2
+#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
+#         i1].flatten(), xrot[i2].flatten())
+#     dist = np.reshape(dist, (ny, nx + 1))
 
-    # dndx: XI-derivative of inverse metric factor pn, d(1/pn)/d(XI).
-    i1 = ddy1
-    i2 = ddy2
-    dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-        i1].flatten(), xrot[i2].flatten())
-    dist = np.reshape(dist, (ny, nx + 1))
+#     i1 = ddx1
+#     i2 = ddx2
+#     dndx = dist[i2] - dist[i1]
 
-    i1 = ddx1
-    i2 = ddx2
-    dndx = dist[i2] - dist[i1]
-
-    return (pm, pn, dmde, dndx)
+#     return (pm, pn, dmde, dndx)
 
 
 def test_grid_uniform(x, y):
