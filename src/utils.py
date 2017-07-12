@@ -46,101 +46,6 @@ def rotate(x, y, phi, centerx, centery):
 
     return (xrot, yrot)
 
-# DO NOT USE THIS: INSTEAD, INTERPOLATE ONTO POINTS OBTAINED FROM INVERSE
-# PROJECTION
-# def rotate_and_interpolate(x, y, z, phi, centerx, centery):
-#     """Rotate grids x an y by angle phi around center (cx,cy), interpolate z onto rotated grid.
-
-#     Parameters
-#     ----------
-#     x: 1-d array
-#     y: 1-d array
-#     z: Masked data on a rectangular mesh defined by x and y
-#     phi: angle of rotation
-#     centerx: center x-coord
-#     centery: center y-coord
-
-#     TODO: take account of varying lat/lon spacing
-#     """
-
-#     ny, nx = z.shape
-
-#     dx = np.diff(x)
-#     dy = np.diff(y)
-
-#     if type(z) is not np.ma.MaskedArray:
-#         raise Exception(
-#             "Aborted. Array is not masked, fill values may affect interpolation.")
-
-#     test_grid_uniform(x, y)
-
-#     xx, yy = np.meshgrid(x, y)
-
-#     # translate, rotate, translate back
-#     xxrot, yyrot = rotate(xx, yy, phi, centerx, centery)
-
-#     # output is initially masked everywhere
-#     o = np.nan * np.ones((ny, nx))
-#     zrot = np.ma.array(o, mask=np.ones((ny, nx)))
-
-#     # suppress warning
-#     zrot.unshare_mask()
-
-#     # TODO: do this more efficiently, but in a way that accounts for masked
-#     # values. Here, each rotated data point is considered individually, with
-#     # its 4 surrounding gridpoints on the original grid.
-
-#     for jrot in np.arange(ny):
-#         for irot in np.arange(nx):
-#             xp = xxrot[jrot, irot]
-#             yp = yyrot[jrot, irot]
-#             i = x <= xp
-#             i = int(sum(i)) - 1
-#             j = y <= yp
-#             j = int(sum(j)) - 1
-
-#             # check if rotated point is outside of original domain
-#             if (i == nx - 1) | (j == ny - 1) | (i < 0) | (j < 0):
-#                 continue
-
-#             # interpolate
-#             f = interpolate.interp2d(
-#                 [y[j], y[j + 1]], [x[i], x[i + 1]], z[j:j + 2, i:i + 2])
-#             zrot[jrot, irot] = f(yp, xp)
-
-#     return (xxrot, yyrot, zrot)
-
-
-def cut(rectangle, z):
-    """Cut domain to rectangular shape (e.g. after rotating)
-
-    Parameters
-    ----------
-    rectangle: tuple ((y,x), height, width) in units of indices
-    z: data on a rectangular mesh
-    """
-
-    mask = np.ones(z.shape, dtype=bool)
-    y1 = rectangle[0][0]
-    x1 = rectangle[0][1]
-    y2 = y1 + rectangle[1]
-    x2 = x1 + rectangle[2]
-    mask[y1:y2, x1:x2] = 0
-
-    # alert if masked parts (e.g. fill values or nans) are not cut
-    if type(z) is np.ma.MaskedArray:
-        outside = ~mask & z.mask
-        if np.any(outside):
-            raise Exception(
-                'Rotated domain outside of original domain (total of ' + str(
-                    sum(outside.flatten())) + ' gridpoints).')
-    z = z[~mask]
-    ii = np.where(~mask)
-    ny = ii[0][-1] - ii[0][0] + 1
-    nx = ii[1][-1] - ii[1][0] + 1
-    z = np.reshape(z, (ny, nx))
-    return z
-
 
 def spherical_distance(lat1, lat2, lon1, lon2):
     """Distance between the two points along a great circle of the sphere.
@@ -163,94 +68,6 @@ def spherical_distance(lat1, lat2, lon1, lon2):
     c = 2 * np.arcsin(np.sqrt(a))
 
     return R * c
-
-# DO NOT USE THIS
-# def get_pmpn(x, y, phi, centerx, centery):
-#     """Inverse of differential distances in XI at RHO-points, after optional rotation by angle phi.
-
-#     Parameters
-#     ----------
-#     x: 1-d array
-#     y: 1-d array
-#     phi: angle of rotation
-#     centerx: center x-coord
-#     centery: center y-coord
-#     """
-
-#     test_grid_uniform(x, y)
-
-#     # Must convert to double, differential lats/lons are too small for using
-#     # f32
-#     dx = np.double(np.diff(x)[0])
-#     cs = dx * np.ones(len(x))
-#     cs = np.cumsum(cs) - dx
-#     x = np.double(x[0]) + cs
-#     dy = np.double(np.diff(y)[0])
-#     cs = dy * np.ones(len(y))
-#     cs = np.cumsum(cs) - dy
-#     y = np.double(y[0]) + cs
-
-#     nx = len(x)
-#     ny = len(y)
-
-#     lx = regrid.envelope_1d(x)
-#     ly = regrid.envelope_1d(y)
-
-#     ddx1 = (slice(None), slice(None, -1))
-#     ddx2 = (slice(None), slice(1, None))
-#     ddy1 = (slice(None, -1), slice(None))
-#     ddy2 = (slice(1, None), slice(None),)
-
-#     # pm
-#     xx, yy = np.meshgrid(lx, y)
-#     xrot, yrot = rotate(xx, yy, phi, centerx, centery)
-
-#     i1 = ddx1
-#     i2 = ddx2
-#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-#         i1].flatten(), xrot[i2].flatten())
-#     dist = np.reshape(dist, (ny, nx))
-
-#     pm = 1 / dist
-
-#     # pn
-#     xx, yy = np.meshgrid(x, ly)
-#     xrot, yrot = rotate(xx, yy, phi, centerx, centery)
-
-#     i1 = ddy1
-#     i2 = ddy2
-#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-#         i1].flatten(), xrot[i2].flatten())
-#     dist = np.reshape(dist, (ny, nx))
-
-#     pn = 1 / dist
-
-#     # dmde: ETA-derivative of inverse metric factor pm, d(1/pm)/d(ETA).
-#     xx, yy = np.meshgrid(lx, ly)
-#     xrot, yrot = rotate(xx, yy, phi, centerx, centery)
-
-#     i1 = ddx1
-#     i2 = ddx2
-#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-#         i1].flatten(), xrot[i2].flatten())
-#     dist = np.reshape(dist, (ny + 1, nx))
-
-#     i1 = ddy1
-#     i2 = ddy2
-#     dmde = dist[i2] - dist[i1]
-
-#     # dndx: XI-derivative of inverse metric factor pn, d(1/pn)/d(XI).
-#     i1 = ddy1
-#     i2 = ddy2
-#     dist = spherical_distance(yrot[i1].flatten(), yrot[i2].flatten(), xrot[
-#         i1].flatten(), xrot[i2].flatten())
-#     dist = np.reshape(dist, (ny, nx + 1))
-
-#     i1 = ddx1
-#     i2 = ddx2
-#     dndx = dist[i2] - dist[i1]
-
-#     return (pm, pn, dmde, dndx)
 
 
 def test_grid_uniform(x, y):
@@ -285,22 +102,93 @@ def myplot_add_path(vertices, axes):
     axes.add_patch(patch)
 
 
-def hanning_smoother(h):
-    """Copied from Romstools. TODO: find out whether this is Hann or Hamming?"""
-    [M, L] = np.array(h.shape)
-    L = L - 1
-    M = M - 1
-    Mm = M - 1
-    Mmm = M - 2
-    Lm = L - 1
-    Lmm = L - 2
+def smooth_hanning(h):
 
-    h[1:Mm, 1:Lm] = 0.125 * (h[0:Mmm, 1:Lm] + h[2:M, 1:Lm] +
-                             h[1:Mm, 0:Lmm] + h[1:Mm, 2:L] +
-                             4 * h[1:Mm, 1:Lm])
+    h[1:-1, 1:-1] = 0.125 * (h[0:-2, 1:-1] + h[2:, 1:-1] +
+                             h[1:-1, 0:-2] + h[1:-1, 2:] +
+                             4 * h[1:-1, 1:-1])
 
     h[0, :] = h[1, :]
-    h[M, :] = h[Mm, :]
-    h[:, 0] = h[:, 1]
-    h[:, L] = h[:, Lm]
+    h[-1, :] = h[-2, :]
+    h[1:-1, 0] = h[1:-1, 1]
+    h[1:-1, -1] = h[1:-1, -1]
     return h
+
+
+def rxold(h1, h2):
+    return (h1 - h2) / (h1 + h2)
+
+
+def iter(h):
+    for j in range(h.shape[0]):
+        for i in range(h.shape[1] - 1):
+            r = rxold(h[j, i], h[j, i + 1])
+            rt = 0.2
+            if r > 0.2:
+                # rt = r
+                h[j, i + 1] = ((1 - rt) / (1 + rt)) * h[j, i]
+    return h
+
+
+def rx(h2, h1):
+    """Slope parameter, Beckmann Haidvogel (1993)"""
+    # but note that depth variation is of opposite sign than bathymetry slope
+    # rx is positive for downward (negative) slope
+    return (h2 - h1) / (h2 + h1)
+
+
+def lower_topo(h):
+    for i in range(h.shape[1] - 1):
+        r = rx(h[:, i + 1], h[:, i])
+        rt = -0.2
+        # r is negative if slope is positive
+        j = r < - 0.2
+        h[j, i + 1] = ((1 + rt) / (1 - rt)) * h[j, i]
+    return h
+
+
+def raise_topo(h):
+    for i in range(h.shape[1] - 1):
+        r = rx(h[:, i + 1], h[:, i])
+        rt = 0.2
+        # r is positive if slope is negative
+        j = r > 0.2
+        h[j, i + 1] = ((1 + rt) / (1 - rt)) * h[j, i]
+    return h
+
+
+def get_rx(h):
+    """Magnitude of Beckman & Haidvogel number
+
+    Parameters
+    ----------
+    h: topography, 2-d array
+    """
+    assert h.ndim == 2, "Aborted. Input array must be two-dimensional."
+
+    hxm = h[:, 1:] - h[:, :-1]
+    hxp = h[:, 1:] + h[:, :-1]
+    hym = h[1:, :] - h[:-1, :]
+    hyp = h[1:, :] + h[:-1, :]
+    rx0x = np.abs(hxm) / hxp
+    rx0y = np.abs(hym) / hyp
+    return rx0x, rx0y
+
+
+def smooth_martinho(h):
+    """Bathymetry smoother, loosely following Martinho and Batteen (2006).
+    This version is without volume conservation. I don't have access to
+    Ocean Modelling, so I can't download the supplementary data in which
+    they seem to describe their algorithm in detail.
+
+    Parameters
+    ----------
+    h: topography, 2-d array
+    """
+    heast = lower_topo(h.copy())
+    heast = iter(h.copy())
+    hnorth = lower_topo(heast.copy().transpose()[::-1, :])
+    hwest = lower_topo(hnorth.copy().transpose()[::-1, :])
+    hsouth = lower_topo(hwest.copy().transpose()[::-1, :])
+    hnew = hsouth.copy().transpose()[::-1, :]
+    return hnew

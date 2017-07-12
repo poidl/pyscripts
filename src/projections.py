@@ -152,9 +152,9 @@ def projection_omerc_v1(lon, lat, lon1, lat1, alpha, k0=1):
         'proj '
         '+proj=omerc '
         '+alpha={0:.8f} '
-        '+lat_0={1:.14f} +lonc={2:.14f} '
+        '+lat_0={1:.14f} +lonc={2:.14f} +k={3:.14f} '
         'proj_input > proj_output'
-    ).format(alpha, lat1, lon1)
+    ).format(alpha, lat1, lon1, k0)
 
     return call_proj(lon, lat, proj_cmd)
 
@@ -181,9 +181,9 @@ def projection_omerc_v1_inv(x, y, lon1, lat1, alpha, k0=1):
         'proj -I -f \'% .30f\' '
         '+proj=omerc '
         '+alpha={0:.8f} '
-        '+lat_0={1:.14f} +lonc={2:.14f} '
+        '+lat_0={1:.14f} +lonc={2:.14f} +k={3:.14f} '
         'proj_input > proj_output'
-    ).format(alpha, lat1, lon1)
+    ).format(alpha, lat1, lon1, k0)
 
     return call_proj(x, y, proj_cmd)
 
@@ -228,13 +228,12 @@ def call_proj(x, y, cmd):
             f.write('{0:.14f} {1:.14f}\n'.format(x[i], y[i]))
 
     f.close()
-    print('Running \'' + cmd + '\'')
+    print('Calling \'' + cmd + '\'')
     subprocess.run(
         cmd,
         shell=True,
         check=True
     )
-
     res = np.loadtxt('proj_output')
     # clean up
     os.remove('proj_input')
@@ -261,11 +260,19 @@ def get_dist_proj(lon1, lat1, lon2, lat2):
     lat2: 1-d array
     """
 
-    assert ((lat1.ndim == 1) &
-            (lon1.ndim == 1) &
-            (lat2.ndim == 1) &
-            (lon2.ndim == 1)
-            ), "Aborted. Input arrays must be one-dimensional."
+    allscalars = np.all(
+        np.isscalar(lon1) &
+        np.isscalar(lat1) &
+        np.isscalar(lon2) &
+        np.isscalar(lat2)
+    )
+
+    if ~allscalars:
+        assert ((lat1.ndim == 1) &
+                (lon1.ndim == 1) &
+                (lat2.ndim == 1) &
+                (lon2.ndim == 1)
+                ), "Aborted. Input arrays must be one-dimensional."
 
     geod_cmd = (
         'geod -I -f \'% .5f\' '
@@ -288,7 +295,7 @@ def call_geod(x1, y1, x2, y2, cmd):
                 y1[i], x1[i], y2[i], x2[i]))
 
     f.close()
-    print('Running \'' + cmd + '\'')
+    print('Calling \'' + cmd + '\'')
     subprocess.run(
         cmd,
         shell=True,
@@ -302,8 +309,56 @@ def call_geod(x1, y1, x2, y2, cmd):
     os.remove('geod_output')
 
     if np.isscalar(x1):
+        forward_azimuth = res[0]
         dist = res[2]
     else:
+        forward_azimuth = res[:, 0]
         dist = res[:, 2]
 
-    return dist
+    return forward_azimuth, dist
+
+
+def projection_merc(x, y, lat_ts):
+    """
+    Mercator
+
+    Parameters
+    ----------
+    x: 1-d array of longitudes (degrees)
+    y: 1-d array of latitudes (degrees)
+    lat_ts: latitude of true scale
+    """
+
+    proj_cmd = (
+        'proj -f \'% .30f\' '
+        '+proj=merc +lat_ts={0:.14f} '
+        'proj_input > proj_output'
+    ).format(lat_ts)
+
+    if not np.isscalar(x):
+        assert ((x.ndim == 1) & (y.ndim == 1)
+                ), "Aborted. Input arrays must be one-dimensional."
+    return call_proj(x, y, proj_cmd)
+
+
+def projection_merc_inv(x, y, lat_ts):
+    """
+    Inverse Mercator
+
+    Parameters
+    ----------
+    x: 1-d array of longitudes (degrees)
+    y: 1-d array of latitudes (degrees)
+    lat_ts: latitude of true scale
+    """
+
+    proj_cmd = (
+        'proj -I -f \'% .30f\' '
+        '+proj=merc +lat_ts={0:.14f} '
+        'proj_input > proj_output'
+    ).format(lat_ts)
+
+    if not np.isscalar(x):
+        assert ((x.ndim == 1) & (y.ndim == 1)
+                ), "Aborted. Input arrays must be one-dimensional."
+    return call_proj(x, y, proj_cmd)
