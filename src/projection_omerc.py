@@ -27,8 +27,8 @@ import matplotlib.pyplot as plt
 import regrid as regrid
 import projections as proj
 
-fname = '../../../../../work/data/ETOPO2v2g_f4.nc'
-FIGPATH = '../../figures'
+fname = '/home/stefan/work/data/ETOPO1_Ice_g_gmt4.grd'
+FIGPATH = '../figures'
 
 # Region covering north-west America and the North-east pacific
 lonmin = -158.5
@@ -107,7 +107,7 @@ latg1 = latg[:, :-1]
 long2 = long[:, 1:]
 latg2 = latg[:, 1:]
 
-dx = proj.get_dist_proj(long1.flatten(), latg1.flatten(),
+trash, dx = proj.get_dist_proj(long1.flatten(), latg1.flatten(),
                         long2.flatten(), latg2.flatten())
 
 long1 = long[:-1, :]
@@ -115,7 +115,7 @@ latg1 = latg[:-1, :]
 long2 = long[1:, :]
 latg2 = latg[1:, :]
 
-dy = proj.get_dist_proj(long1.flatten(), latg1.flatten(),
+trash, dy = proj.get_dist_proj(long1.flatten(), latg1.flatten(),
                         long2.flatten(), latg2.flatten())
 
 dx = np.reshape(dx, (nyg, nxg - 1))

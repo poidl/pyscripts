@@ -32,9 +32,9 @@ def envelope(x, axis=-1):
     t2r[axis] = slice(None, -1, None)
     t3[axis] = slice(-1, None)
 
-    xn[t2l] = x[t2r] + 0.5 * dx
+    xn[tuple(t2l)] = x[tuple(t2r)] + 0.5 * dx
 
-    xn[t1] = x[t1] - 0.5 * dx[t1]
-    xn[t3] = x[t3] + 0.5 * dx[t3]
+    xn[tuple(t1)] = x[tuple(t1)] - 0.5 * dx[tuple(t1)]
+    xn[tuple(t3)] = x[tuple(t3)] + 0.5 * dx[tuple(t3)]
 
     return xn
